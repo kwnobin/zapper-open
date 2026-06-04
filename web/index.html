@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Zapper Open</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+</head>
+<body>
+  <header>
+    <span class="brand">Zapper Open</span>
+    <span id="status" class="dot" title="websocket"></span>
+    <select id="picker" title="session filter">
+      <option value="">All sessions (timeline)</option>
+    </select>
+    <input id="label" type="text" placeholder="label this session" disabled />
+    <button id="saveLabel" disabled>save</button>
+  </header>
+
+  <main id="sketch"></main>
+
+  <footer>
+    <input id="comment" type="text" placeholder="select a session, then send a comment to its next turn" disabled />
+    <button id="send" disabled>send</button>
+  </footer>
+
+  <!-- approval modal -->
+  <div id="modal" class="modal hidden">
+    <div class="card">
+      <div class="who" id="modalWho"></div>
+      <div class="tool" id="modalTool"></div>
+      <pre class="detail" id="modalDetail"></pre>
+      <div class="actions">
+        <button id="allow" class="allow">allow</button>
+        <button id="deny" class="deny">deny</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

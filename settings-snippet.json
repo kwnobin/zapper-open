@@ -1,0 +1,26 @@
+{
+  "_comment": "Merge these into ~/.claude/settings.json under the \"hooks\" key. Replace __REPO__ with the absolute path to this repo. scripts/install.sh does both for you.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          { "type": "command", "command": "__REPO__/hooks/pre-tool-use-health-gate.sh" },
+          { "type": "http", "url": "http://127.0.0.1:8089/hooks/pre-tool-use", "timeout": 130 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      { "hooks": [ { "type": "http", "url": "http://127.0.0.1:8089/hooks/post-tool-use", "timeout": 5 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "http", "url": "http://127.0.0.1:8089/hooks/stop", "timeout": 5 } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "http", "url": "http://127.0.0.1:8089/hooks/user-prompt-submit", "timeout": 10 } ] }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "http", "url": "http://127.0.0.1:8089/hooks/session-start", "timeout": 5 } ] }
+    ]
+  }
+}

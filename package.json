@@ -1,0 +1,17 @@
+{
+  "name": "zapper-open",
+  "version": "0.1.0",
+  "description": "Watch a Claude Code session in the browser: see tool events as particles, inject comments into the next turn, and approve tools from a modal.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
