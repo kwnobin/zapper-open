@@ -116,11 +116,30 @@ function broadcast(message) {
 
 app.use(express.json({ limit: '256kb' }));
 
+const AUTH_COOKIE = 'zapper_auth';
+function readCookie(req, name) {
+  const header = req.headers.cookie;
+  if (!header) return '';
+  for (const part of header.split(';')) {
+    const i = part.indexOf('=');
+    if (i === -1) continue;
+    if (part.slice(0, i).trim() !== name) continue;
+    try { return decodeURIComponent(part.slice(i + 1).trim()); } catch { return part.slice(i + 1).trim(); }
+  }
+  return '';
+}
+
 // Optional shared-token gate. /health stays open so the hook health-probe always works.
+// A valid ?token= or header sets an auth cookie, so the browser's later asset/WS requests
+// (which carry no token) authenticate by cookie.
 app.use((req, res, next) => {
   if (!TOKEN || req.path === '/health') return next();
-  const ok = req.get('X-Observatory-Token') === TOKEN || req.query.token === TOKEN;
+  const viaQueryOrHeader = req.get('X-Observatory-Token') === TOKEN || req.query.token === TOKEN;
+  const ok = viaQueryOrHeader || readCookie(req, AUTH_COOKIE) === TOKEN;
   if (!ok) return res.status(401).json({ error: 'unauthorized' });
+  if (viaQueryOrHeader) {
+    res.setHeader('Set-Cookie', `${AUTH_COOKIE}=${encodeURIComponent(TOKEN)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`);
+  }
   next();
 });
 
@@ -248,7 +267,8 @@ app.post('/sessions/:id/label', (req, res) => {
 // ---- websocket -------------------------------------------------------------
 function handleUpgrade(req, socket, head) {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  if (TOKEN && url.searchParams.get('token') !== TOKEN) return socket.destroy();
+  const authed = !TOKEN || url.searchParams.get('token') === TOKEN || readCookie(req, AUTH_COOKIE) === TOKEN;
+  if (!authed) return socket.destroy();
   if (url.pathname === '/ws') {
     return wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   }
