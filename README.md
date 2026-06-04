@@ -4,30 +4,32 @@
 
 클로드 코드(Claude Code) 세션을 브라우저에서 들여다보는 가장 작은 대시보드.
 
-![대시보드 — 세션 노드로 전기 아크가 흐르고, 오른쪽에 터미널](docs/demo.png)
-![승인 모달 — 위험한 명령을 웹에서 허용/거부](docs/approval.png)
+![대시보드 — user 앵커에서 세션 노드로 전기 아크, say 버블, 우측 터미널](docs/demo.png)
 
-- AI가 도구를 쓸 때마다 you(왼쪽)에서 세션 노드(오른쪽)로 전기 아크가 흐른다 — 무슨 일이 일어나는지 글이 아니라 그림으로 본다.
-- 상단 cmd 바에서 "의견"을 보내면 그 세션의 다음 차례에 끼워 넣어진다.
-- 민감한 도구(Bash·Edit·Write) 실행 승인을 웹 모달에서 누른다. 안 누르면 원래의 터미널 프롬프트로 돌아간다.
-- 여러 세션을 동시에 띄워도 세션별 색으로 구분되고, picker로 골라 본다.
-- 오른쪽 사이드 터미널(별도 풀스크린 페이지도)이 tmux 세션에 붙어, 웹에서 직접 타이핑한다.
+- AI가 도구를 쓸 때마다 상단 user 앵커에서 세션 노드로 전기 아크가 흐른다 — gold(명령 in)·green(결과 out). 무슨 일이 일어나는지 글이 아니라 그림으로 본다.
+- 노드마다 say 버블(마지막 응답 한 줄)이 붙고, 작업 중/대기 상태에 따라 글로우가 바뀐다.
+- 상단 cmd 바에서 "의견"을 보내면 그 노드의 다음 차례에 끼워 넣어진다.
+- 민감한 도구(Bash·Edit·Write) 승인을 노드 위 in-canvas 박스에서 누른다. 안 누르면 원래의 터미널 프롬프트로 돌아간다.
+- 노드를 클릭하면 오른쪽 사이드 터미널(별도 풀스크린 페이지도)이 그 tmux 세션에 붙어, 웹에서 직접 타이핑한다.
 
 단일 사용자, 로컬 전용. 이벤트·세션 상태는 메모리에만 있고 프로세스를 끄면 사라진다. DB도, 클라우드도, 외부 인증도 없다.
 
-> 이 레포는 더 큰 사설 도구("Zapper")의 공개 가능한 핵심만 추려낸 레퍼런스다. codex 노드, 사용량 한도, 파일 업로드 같은 기능은 의도적으로 빠져 있다. 핵심(훅 → 브리지 → 시각화 + 양방향 + 터미널)을 작게 보여주는 것이 목적이다.
+> 이 레포는 더 큰 사설 도구("Zapper")의 공개 가능한 부분이다. 프론트엔드(`main-view.js` 아트 엔진 + `styles.css` + 레이아웃)는 실제 Zapper에서 그대로 가져와 디자인을 맞췄고, codex 노드·사용량 한도·파일 업로드 같은 기능과 사적 경로·토큰은 발라냈다.
 
 ## 구조
 
 ```
 zapper-open/
 ├── server/
-│   ├── index.js        Node 브리지 (Express + ws). 이벤트 수신·세션·의견큐·승인. 인메모리.
+│   ├── index.js        Node 브리지 (Express + ws). 이벤트 수신·세션·의견큐·승인·say. 인메모리.
 │   └── pty.js          /pty/ws — node-pty 로 tmux 세션에 attach (xterm 백엔드)
 ├── web/                p5.js 대시보드 + xterm 터미널
-│   ├── index.html · app.js · styles.css    메인 대시보드 (아크·노드·cmd바·사이드 터미널)
-│   ├── term.js                              xterm ↔ /pty/ws 공용 헬퍼
-│   └── terminal.html                        풀스크린 터미널 (별도 탭)
+│   ├── main-view.js    p5 아트 엔진 (노드·전기아크·글로우·say 버블·in-canvas 승인). 실제 Zapper 이식.
+│   ├── main.js         컨트롤러 — WS → main-view 구동, picker·cmd바·승인·노드클릭→터미널
+│   ├── styles.css      실제 Zapper 스타일 (헤더·cmd바·grid 레이아웃)
+│   ├── index.html      메인 대시보드
+│   ├── term.js         xterm ↔ /pty/ws 공용 헬퍼
+│   └── terminal.html   풀스크린 터미널 (별도 탭)
 ├── hooks/              pre-tool-use-health-gate.sh — 브리지 다운 시 게이팅 도구 deny
 ├── settings-snippet.json   ~/.claude/settings.json 에 머지할 훅 설정
 └── scripts/install.sh  훅을 settings.json 에 자동 머지 (백업 + 경로 치환)

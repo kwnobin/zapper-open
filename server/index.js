@@ -9,6 +9,7 @@
 // single-user local dashboard. No database, no auth provider, no cloud.
 
 import express from 'express';
+import fs from 'node:fs/promises';
 import http from 'node:http';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -140,8 +141,38 @@ const forward = (type) => (req, res) => {
   res.json({});
 };
 app.post('/hooks/post-tool-use', forward('PostToolUse'));
-app.post('/hooks/stop', forward('Stop'));
 app.post('/hooks/session-start', forward('SessionStart'));
+
+// Stop: record the event, then (async) read the transcript and broadcast the last
+// assistant line as a "say" bubble on the node. Generic — no summary marker required.
+app.post('/hooks/stop', (req, res) => {
+  const sessionId = req.body?.session_id;
+  if (!sessionId) return res.status(400).json({ error: 'session_id required' });
+  pushEvent('Stop', sessionId, req.body || {});
+  res.json({});
+  const transcriptPath = req.body?.transcript_path;
+  if (typeof transcriptPath === 'string' && transcriptPath) {
+    setTimeout(() => emitSay(sessionId, transcriptPath), 1000); // let the transcript flush
+  }
+});
+
+async function emitSay(sessionId, transcriptPath) {
+  try {
+    const text = await fs.readFile(transcriptPath, 'utf8');
+    let last = '';
+    for (const line of text.split('\n')) {
+      if (!line) continue;
+      try {
+        const o = JSON.parse(line);
+        if (o.type !== 'assistant') continue;
+        for (const c of (o.message?.content || [])) {
+          if (c.type === 'text' && typeof c.text === 'string' && c.text.trim()) last = c.text.trim();
+        }
+      } catch { /* skip malformed line */ }
+    }
+    if (last) broadcast({ kind: 'say', session_id: sessionId, text: last.replace(/\s+/g, ' ').slice(0, 80) });
+  } catch { /* no transcript */ }
+}
 
 // UserPromptSubmit: drain this session's comment queue and hand it back to Claude Code
 // as additionalContext, so it lands at the front of the next turn.

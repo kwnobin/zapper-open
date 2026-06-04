@@ -1,54 +1,1420 @@
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #0b0e14; color: #d7dce5;
-  font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-body { display: flex; flex-direction: column; overflow: hidden; }
-
-header, .cmdbar { display: flex; gap: 8px; align-items: center; padding: 8px 12px;
-  background: #11151f; border-bottom: 1px solid #1c2230; }
-.cmdbar { background: #0e1320; }
-.brand { font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; }
-.spacer { flex: 1 1 auto; }
-.dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; flex: 0 0 auto; }
-.dot.up { background: #34d399; } .dot.down { background: #f87171; }
-.muted { color: #7b86a0; }
-
-select, input, button { background: #0e131c; color: #d7dce5; border: 1px solid #2a3242;
-  border-radius: 6px; padding: 6px 8px; font: inherit; }
-header input { flex: 0 0 auto; width: 160px; }
-.cmdbar input { flex: 1 1 auto; min-width: 0; }
-#tmuxname { width: 110px; }
-button { cursor: pointer; white-space: nowrap; }
-button:disabled, input:disabled { opacity: 0.45; cursor: default; }
-
-main { flex: 1 1 auto; display: flex; min-height: 0; }
-#sketch { flex: 1 1 auto; position: relative; min-width: 0; }
-#sketch canvas { display: block; }
-
-#termpane { flex: 0 0 440px; display: flex; flex-direction: column;
-  border-left: 1px solid #1c2230; background: #090c12; min-width: 0; }
-.termhead { display: flex; gap: 8px; align-items: center; padding: 6px 10px;
-  background: #11151f; border-bottom: 1px solid #1c2230; font-size: 12px; }
-.termhead button { padding: 3px 8px; }
-.termhead #termtarget { flex: 1 1 auto; }
-#term { flex: 1 1 auto; min-height: 0; padding: 6px 8px; }
-
-/* narrow screens: hide the side terminal, use the full-screen /terminal.html instead */
-@media (max-width: 900px) {
-  #termpane { display: none; }
-  header input#tmuxname { width: 90px; }
+:root {
+  --bg: #0a0e1a;
+  --surface: rgba(20,28,48,0.7);
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --amber: #ffb627;
+  --cyan: #00d4ff;
+  --green: #7ee787;
+  --red: #ff6e6e;
+  --border: rgba(229,231,235,0.16);
 }
 
-.modal { position: fixed; inset: 0; display: grid; place-items: center;
-  background: rgba(4, 6, 11, 0.6); z-index: 10; }
-.modal.hidden { display: none; }
-.card { background: #141a26; border: 1px solid #2a3242; border-radius: 12px;
-  padding: 18px; width: min(520px, 92vw); }
-.who { font-size: 12px; color: #8b94a7; }
-.tool { font-size: 18px; font-weight: 700; margin: 4px 0 8px; }
-.detail { max-height: 40vh; overflow: auto; white-space: pre-wrap; word-break: break-word;
-  background: #0b0f17; border: 1px solid #232b3a; border-radius: 8px; padding: 10px; margin: 0 0 14px; }
-.actions { display: flex; gap: 10px; }
-.actions button { flex: 1; padding: 10px; font-weight: 700; }
-.allow { background: #103a2c; border-color: #1f7a55; }
-.deny { background: #3a1414; border-color: #7a1f1f; }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Pretendard", "Noto Sans KR", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.005em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+button:hover {
+  background: rgba(229,231,235,0.10);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+input,
+select {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--text);
+  background: rgba(10,14,26,0.58);
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--cyan);
+}
+
+textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  background: rgba(10,14,26,0.58);
+  outline: none;
+}
+
+textarea:focus {
+  border-color: var(--cyan);
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 16px;
+  padding: 22px clamp(16px, 4vw, 48px);
+  background: rgba(10,14,26,0.62);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229,231,235,0.08);
+  /* floating dropdown panel 이 header 아래로 삐져나갈 수 있게 */
+  overflow: visible;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-top h1 {
+  flex: 0 0 auto;
+}
+
+#hamburger-toggle {
+  flex: 0 0 auto;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* 모든 페이지 헤더 우측 — 햄버거 좌측. margin-left: auto 로 우측 끝으로 밀고,
+   header-top 의 gap(10px) 을 그대로 두어 햄버거와 살짝 띄움. */
+.header-back {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 8px;
+  margin-left: auto;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.header-back svg { display: block; }
+.header-back:hover {
+  background: rgba(229,231,235,0.10);
+  color: var(--cyan);
+}
+
+/* 메인 페이지에 askq/approval 모달 떠 있으면 sub-page 의 ⌂ 가 pulsing red glow.
+   server: GET /approvals/pending. watcher: web/dot-watcher.js. */
+@keyframes header-back-pending-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255,48,48,0.55), 0 0 18px rgba(255,48,48,0.28);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(255,48,48,0.85), 0 0 26px rgba(255,48,48,0.50);
+  }
+}
+.header-back.has-pending {
+  color: #ff8a8a;
+  text-shadow: 0 0 6px rgba(255,48,48,0.85);
+  background: rgba(255,48,48,0.10);
+  animation: header-back-pending-pulse 1.6s ease-in-out infinite;
+}
+.header-back.has-pending:hover {
+  color: #ffb3b3;
+  background: rgba(255,48,48,0.18);
+}
+
+/* header-back 톤 통일 + margin-left:auto 없음 (알림 버튼 옆에 붙음).
+   페이지마다 우측 추가 아이콘 버튼이 늘어날 때 쓰는 범용 헤더 버튼. */
+.header-icon-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.header-icon-btn svg { display: block; }
+.header-icon-btn:hover:not(:disabled) {
+  background: rgba(229,231,235,0.10);
+  color: var(--cyan);
+}
+.header-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.header-icon-btn.firing {
+  color: var(--cyan);
+  background: rgba(0,212,255,0.14);
+}
+
+#hamburger-panel {
+  /* Right-anchored floating dropdown — 햄버거 버튼 바로 아래 우측 정렬.
+     header 가 position: sticky 라 absolute 의 containing block 역할. */
+  position: absolute;
+  top: calc(100% + 6px);
+  right: clamp(16px, 4vw, 48px);
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100dvh - 84px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  z-index: 50;
+  display: grid;
+  gap: 6px;
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(15,20,36,0.92);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+}
+
+/* iOS Safari 15 이전 등 dvh 미지원 환경 fallback */
+@supports not (height: 100dvh) {
+  #hamburger-panel { max-height: calc(100vh - 84px); }
+}
+
+#hamburger-panel[hidden] {
+  display: none;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.menu-row > span {
+  flex: 0 0 auto;
+  min-width: 40px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.menu-row #session-picker,
+.menu-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 좁은 패널 (320px) 폭에 input + 4 버튼 한 줄 절대 안 들어감.
+   input 은 자기 줄 통째로 차지, 버튼 4개는 다음 줄에서 균등 분할. */
+.menu-row > input { flex-basis: 100%; }
+
+.menu-row #new-claude,
+.menu-row #new-claude-autopilot,
+.menu-row #new-codex,
+.menu-row #new-codex-autopilot {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menu-row #new-claude {
+  background: rgba(126,231,135,0.14);
+  color: var(--green);
+}
+.menu-row #new-claude:hover { background: rgba(126,231,135,0.24); }
+/* claude(a) — 초록 톤 유지 + amber border 로 autopilot(위험) 신호 */
+.menu-row #new-claude-autopilot {
+  background: rgba(126,231,135,0.14);
+  color: var(--green);
+  border: 1px solid rgba(255,179,90,0.5);
+}
+.menu-row #new-claude-autopilot:hover { background: rgba(126,231,135,0.24); }
+.menu-row #new-codex {
+  background: rgba(0,212,255,0.14);
+  color: var(--cyan);
+}
+.menu-row #new-codex:hover { background: rgba(0,212,255,0.24); }
+/* codex(a) — cyan 톤 유지 + amber border 로 autopilot(위험) 신호 */
+.menu-row #new-codex-autopilot {
+  background: rgba(0,212,255,0.14);
+  color: var(--cyan);
+  border: 1px solid rgba(255,179,90,0.5);
+}
+.menu-row #new-codex-autopilot:hover { background: rgba(0,212,255,0.24); }
+
+/* 터미널 페이지 햄버거 안 기능 버튼 줄 — 우측 정렬 */
+.term-controls-row {
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 4px 2px 0;
+  border-top: 1px solid rgba(229,231,235,0.06);
+  margin-top: 2px;
+}
+
+.menu-link {
+  display: block;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: transparent;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menu-link:hover {
+  background: rgba(229,231,235,0.10);
+  color: var(--cyan);
+}
+
+/* 햄버거 안 빌드 토큰 — 사용자가 새 코드 받았는지 시각 확인용.
+   콘솔 열기 어려운 모바일에서 핵심 진단 도구. */
+.menu-build-tag {
+  margin-top: 4px;
+  padding: 6px 8px 2px;
+  text-align: right;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  border-top: 1px solid rgba(229,231,235,0.06);
+}
+
+#status {
+  flex: 0 0 auto;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(229,231,235,0.86);
+}
+
+h3 {
+  font-size: 18px;
+}
+
+#status {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+#status.online {
+  color: var(--green);
+  animation: pulse 1.6s ease-in-out infinite;
+  text-shadow: 0 0 16px rgba(126,231,135,0.9);
+}
+
+#status.offline {
+  color: var(--red);
+  text-shadow: 0 0 14px rgba(255,110,110,0.8);
+}
+
+.header-subtitle {
+  flex: 0 0 auto;
+  margin-left: 8px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(229,231,235,0.18);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#cmd-bar {
+  /* main grid item — grid-area "bar". 폭/위치는 grid 가 관장. cmd-send 의 absolute 기준 (position: relative). */
+  grid-area: bar;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  /* 전송 버튼 amber 톤과 톤 매칭 — glow 는 버튼보다 훨씬 약하게 */
+  background: linear-gradient(180deg, rgba(36, 26, 10, 0.82), rgba(20, 14, 6, 0.82));
+  border: 1px solid rgba(255, 179, 90, 0.22);
+  border-radius: 8px;
+  box-shadow: 0 0 6px rgba(255, 179, 90, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.cmd-target {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: rgba(255, 200, 140, 0.65);
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: rgba(255, 179, 90, 0.06);
+  border: 1px solid rgba(255, 179, 90, 0.12);
+  white-space: nowrap;
+  max-width: 30%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#cmd-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 179, 90, 0.14);
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+#cmd-text:focus {
+  border-color: rgba(255, 179, 90, 0.5);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 4px rgba(255, 179, 90, 0.15);
+}
+
+#cmd-text.cmd-error {
+  border-color: var(--red, #ef4444);
+  background: rgba(239,68,68,0.10);
+}
+
+#cmd-text:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* cmd-send = User 노드. cmd-bar 아래 중앙에 떠 있는 다이아몬드 amber 버튼.
+   - 모양: 9번 diamond (45° rotated square)
+   - 색: 19번 amber industrial (muted warm)
+   - 누르거나 cmd-bar Enter 시 .firing 클래스 → 8번 pulse ring 1회 */
+/* cmd-send = 역삼각형 amber. 윗변이 cmd-bar 입력창과 거의 붙음. */
+#cmd-send {
+  position: absolute;
+  /* cmd-bar 의 자식 — bottom 에서 -12px 위 (살짝 cmd-bar 와 겹침). 캔버스 영역 위에 떠있는 시각 anchor 유지. */
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  width: 60px;
+  height: 52px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+.cmd-send-svg {
+  position: absolute;
+  inset: 0;
+  width: 60px;
+  height: 52px;
+  overflow: visible;
+  filter: drop-shadow(0 0 12px rgba(255,179,90,0.32));
+  transition: filter 0.2s ease;
+}
+#cmd-send > span {
+  position: relative;
+  z-index: 1;
+  color: var(--amber, #ffb35a);
+  font-size: 17px;
+  line-height: 1;
+  margin-top: 8px;        /* 삼각형 윗변 가까이 */
+  text-shadow: 0 0 4px rgba(255,179,90,0.6);
+  pointer-events: none;
+}
+#cmd-send:hover:not(:disabled) {
+  /* 기본 transform 의 translateY(-12px) 유지해야 hover 풀려도 위치 안 튐. scale 만 추가. */
+  transform: translate(-50%, -12px) scale(1.05);
+}
+#cmd-send:hover:not(:disabled) .cmd-send-svg {
+  filter: drop-shadow(0 0 18px rgba(255,179,90,0.5));
+}
+#cmd-send:active:not(:disabled) {
+  transform: translate(-50%, -12px) scale(0.96);
+}
+#cmd-send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: saturate(0.5);
+}
+
+/* click 또는 Enter 시 .firing 1회 — drop-shadow 펄스 */
+@keyframes cmd-send-fire {
+  0%   { filter: drop-shadow(0 0 4px rgba(255,179,90,1)); }
+  60%  { filter: drop-shadow(0 0 22px rgba(255,179,90,0.7)); }
+  100% { filter: drop-shadow(0 0 12px rgba(255,179,90,0.32)); }
+}
+#cmd-send.firing .cmd-send-svg {
+  animation: cmd-send-fire 0.85s ease-out;
+}
+
+/* 메인페이지 (index.html body.page-main) 전용 main grid.
+   이전엔 글로벌 `main` 셀렉터라 sub-page (terminal.html, uploads.html, alerts.html
+   등) 의 main 까지 cascading 되면서 height 강제 + grid-template-areas 강제로 풀려
+   각 sub-page 의 row 분배가 깨졌었음 (예: terminal 키바가 13px 으로 squeeze).
+   이제 body.page-main 에 한정. */
+body.page-main main {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "bar"
+    "canvas";
+  /* row-gap 0 — cmd-bar 와 캔버스 사이가 붙어야 cmd-send 가 캔버스 위로 자연스럽게 삐져나옴 (기존 동작). column-gap 12 는 좌우 분할 시 좌측/우측 사이만. */
+  column-gap: 12px;
+  row-gap: 0;
+  width: min(1440px, calc(100% - 32px));
+  margin: 12px auto 24px;
+  /* grid 1fr 가 정확히 분배되도록 main 자체 높이 박음. 기존 #main-view-section 의 height 값과 동등. */
+  height: calc(100vh - 80px);
+  min-height: 480px;
+}
+
+section {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+}
+
+section h2 {
+  margin-bottom: 12px;
+}
+
+#main-view-section {
+  grid-area: canvas;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#main-view-container {
+  position: relative;
+  /* z-index 0 추가로 자체 stacking context 형성 — ::after overlay (z 100) 가
+     이 context 안에 갇혀서 모달 (root z 50/60) 위로 새지 않음. */
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 모달 (approval / askq) 떠 있을 때 캔버스 통째로 입력 차단.
+   p5 가 window 단위 mousedown 잡아서 모달 위 클릭이 노드로 빠지던 문제 완전 차단.
+   modal 닫히면 updateCanvasInputBlock() 이 클래스 떼고 캔버스 입력 복원. */
+body.canvas-blocked #main-view-container {
+  pointer-events: none;
+}
+
+/* 안드로이드 PWA 등 capture-phase listener 가 비껴가는 환경 안전망 —
+   캔버스 영역 안에만 투명 overlay 깔아서 터치/클릭 흡수. header/cmd-bar 등
+   다른 UI 는 그대로 동작 (overlay 가 main-view-container 안에 absolute 라
+   캔버스 영역만 덮음). 모달 (askq z50 / approval z60) 은 fixed 라 overlay
+   위에 떠서 입력 멀쩡. */
+body.canvas-blocked #main-view-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  touch-action: none;
+  background: transparent;
+}
+
+#main-view-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 분할 레이아웃 — ≥800px 에서만 표시. 기본 (모바일) 은 display:none.
+   grid-area: side 로 두 행 차지 → 헤더 바로 아래 (cmd-bar row) 부터 캔버스 row 끝까지.
+   align-self: stretch 로 grid 의 두 row 합산 height 를 명시적으로 채워 iframe height:100% 가 정확히 잡히게 함. */
+#side-terminal-section {
+  display: none;
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+#side-terminal-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted, rgba(255,255,255,0.45));
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
+  pointer-events: none;
+}
+
+#side-terminal-mount {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  display: none;
+  overflow: hidden;
+}
+
+#side-terminal-section[data-state="loaded"] #side-terminal-placeholder {
+  display: none;
+}
+
+#side-terminal-section[data-state="loaded"] #side-terminal-mount {
+  display: block;
+}
+
+#now-card {
+  min-height: 88px;
+}
+
+#now-card {
+  display: flex;
+  align-items: center;
+  color: var(--cyan);
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+#log-list {
+  display: grid;
+  gap: 8px;
+  max-height: 460px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+#log-list li {
+  display: grid;
+  grid-template-columns: 82px 140px 1fr;
+  gap: 10px;
+  align-items: start;
+  min-height: 40px;
+  border: 1px solid rgba(229,231,235,0.1);
+  border-left: 3px solid var(--muted);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(10,14,26,0.42);
+}
+
+#log-list li[data-type="UserPromptSubmit"] {
+  border-left-color: var(--amber);
+}
+
+#log-list li[data-type="PreToolUse"],
+#log-list li[data-type="PostToolUse"] {
+  border-left-color: var(--green);
+}
+
+#log-list li[data-type="Stop"] {
+  border-left-color: var(--cyan);
+}
+
+.event-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.event-type {
+  color: var(--text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.event-summary {
+  color: rgba(229,231,235,0.78);
+  overflow-wrap: anywhere;
+}
+
+#inject {
+  display: grid;
+  gap: 10px;
+}
+
+#inject h2 {
+  margin-bottom: 2px;
+}
+
+#inject-send {
+  justify-self: end;
+  min-width: 88px;
+  background: rgba(0,212,255,0.16);
+  border-color: rgba(0,212,255,0.38);
+}
+
+#inject-queued {
+  min-height: 20px;
+  color: var(--green);
+  font-size: 13px;
+}
+
+.codex-unit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 38px;
+  border-bottom: 1px solid rgba(229,231,235,0.08);
+}
+
+.codex-unit:last-child {
+  border-bottom: 0;
+}
+
+.codex-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codex-elapsed {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status-badge {
+  min-width: 62px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  text-align: center;
+  color: var(--text);
+  background: rgba(229,231,235,0.12);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-badge.running {
+  color: var(--cyan);
+  background: rgba(0,212,255,0.13);
+}
+
+.status-badge.ok {
+  color: var(--green);
+  background: rgba(126,231,135,0.13);
+}
+
+.status-badge.err {
+  color: var(--red);
+  background: rgba(255,110,110,0.13);
+}
+
+#approval-modal {
+  position: fixed;
+  inset: 0;
+  /* askq-modal (50) 위로 — 두 모달 동시에 떠도 approval 액션 버튼이
+     askq-body 우측 영역에 가려서 클릭 안 먹던 문제 방지. */
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(12px);
+}
+
+#approval-modal[hidden] {
+  display: none;
+}
+
+#askq-modal {
+  position: fixed;
+  top: calc(72px + 56px + 12px);
+  right: clamp(16px, 3vw, 28px);
+  /* cmd-send (z-index:5) + canvas 보다 확실히 위 — 모달이 최상위 layer */
+  z-index: 50;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 160px);
+  pointer-events: none;
+}
+
+#askq-modal[hidden] {
+  display: none;
+}
+
+#askq-modal .modal-body {
+  pointer-events: auto;
+  width: 100%;
+  max-height: calc(100vh - 160px);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+}
+
+.askq-body {
+  width: 100%;
+}
+
+.askq-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.askq-session {
+  color: var(--muted, #9aa3b2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+#askq-close {
+  flex: 0 0 auto;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  /* 승인 모달 cancel 버튼 톤과 통일 — Apple gray secondary */
+  background: rgba(99, 99, 102, 0.85);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+#askq-close:hover {
+  background: rgba(120, 120, 124, 0.95);
+}
+
+.askq-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  background: rgba(44, 44, 46, 0.55);
+}
+
+.askq-card + .askq-card {
+  margin-top: 10px;
+}
+
+.askq-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  /* SF Yellow accent — 사용자 액션 필요 */
+  color: rgb(255, 204, 0);
+  background: rgba(255, 204, 0, 0.10);
+  border: 1px solid rgba(255, 204, 0, 0.35);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.askq-question {
+  font-size: 15px;
+  line-height: 1.45;
+  color: rgba(229,231,235,0.95);
+  overflow-wrap: anywhere;
+}
+
+.askq-meta {
+  font-size: 12px;
+  color: var(--muted, #9aa3b2);
+}
+
+.askq-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.askq-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px;
+  background: rgba(28, 28, 30, 0.6);
+  color: rgba(235, 235, 245, 0.92);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.askq-option:hover:not(:disabled):not(.askq-option-picked) {
+  /* SF Blue hover — Apple primary accent */
+  background: rgba(0, 122, 255, 0.14);
+  border-color: rgba(0, 122, 255, 0.55);
+}
+
+.askq-option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.askq-option.askq-option-picked {
+  /* SF Green picked — Apple allow 색과 일치 */
+  border-color: rgba(52, 199, 89, 0.6);
+  background: rgba(52, 199, 89, 0.16);
+  cursor: default;
+}
+
+.askq-option.askq-option-picked::before {
+  content: "";
+  color: rgb(52, 199, 89);
+  font-weight: 700;
+}
+
+.askq-card[data-picked="true"] {
+  border-color: rgba(126,231,135,0.30);
+}
+
+.askq-option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(229,231,235,0.96);
+  overflow-wrap: anywhere;
+}
+
+.askq-option-desc {
+  font-size: 12px;
+  color: var(--muted, #9aa3b2);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.askq-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted, #9aa3b2);
+  line-height: 1.45;
+}
+
+.askq-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(229,231,235,0.15);
+}
+
+.askq-submit-btn {
+  padding: 10px 22px;
+  border: 1px solid rgba(120,170,255,0.55);
+  border-radius: 6px;
+  background: rgba(120,170,255,0.15);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.askq-submit-btn:hover:not(:disabled) {
+  background: rgba(120,170,255,0.30);
+  border-color: rgba(120,170,255,0.85);
+}
+
+.askq-submit-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.askq-global-free-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(229,231,235,0.15);
+}
+
+.askq-global-free-label {
+  font-size: 12px;
+  color: var(--muted, #9aa3b2);
+  line-height: 1.4;
+}
+
+.askq-global-free-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(229,231,235,0.12);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.30);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+
+.askq-global-free-input::placeholder {
+  color: rgba(154,163,178,0.55);
+}
+
+.askq-global-free-input:focus {
+  outline: none;
+  border-color: rgba(120,170,255,0.55);
+  background: rgba(0,0,0,0.45);
+}
+
+.askq-global-free-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.askq-empty {
+  color: var(--muted, #9aa3b2);
+  font-style: italic;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(640px, 100%);
+  max-width: 100%;
+  max-height: min(720px, calc(100vh - 32px));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 18px;
+  overflow: auto;
+  /* Apple SF dark glass — 캔버스 안 승인 박스 expanded modal 과 같은 톤 */
+  background: rgba(28, 28, 30, 0.96);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+  color: rgba(235, 235, 245, 0.92);
+}
+
+.modal-body > * {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.modal-body > #approval-input {
+  flex-shrink: 1;
+}
+
+#approval-tool {
+  color: var(--amber);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+#approval-session {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+#approval-input {
+  max-height: 220px;
+  min-height: 0;
+  margin: 0;
+  border: 1px solid rgba(229,231,235,0.12);
+  border-radius: 8px;
+  padding: 12px;
+  overflow: auto;
+  color: rgba(229,231,235,0.86);
+  background: rgba(10,14,26,0.62);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+#approval-reason {
+  min-height: 64px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  flex: 0 0 auto;
+  min-width: 84px;
+  padding: 0 14px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+#approval-allow {
+  background: rgba(126,231,135,0.16);
+  border-color: rgba(126,231,135,0.38);
+}
+
+#approval-deny {
+  background: rgba(255,110,110,0.16);
+  border-color: rgba(255,110,110,0.38);
+}
+
+#approval-cancel {
+  background: rgba(229,231,235,0.08);
+  border-color: rgba(229,231,235,0.24);
+  color: var(--muted);
+}
+
+/* respondApproval 클릭 즉시 → .pressed (disabled 라도 잘 보이게 opacity override).
+   서버 응답이 늦어도 "눌리긴 했는지" 사용자가 즉시 확인 가능. */
+.modal-actions button.pressed {
+  opacity: 1 !important;
+  cursor: progress;
+  filter: brightness(1.35);
+  box-shadow: 0 0 0 2px currentColor inset, 0 0 14px currentColor;
+}
+.modal-actions button.pressed::after {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: approval-spin 0.8s linear infinite;
+}
+@keyframes approval-spin {
+  to { transform: rotate(360deg); }
+}
+
+.modal-actions button.failed {
+  opacity: 1 !important;
+  cursor: pointer;
+  color: var(--red);
+  background: rgba(255,110,110,0.22);
+  border-color: rgba(255,110,110,0.7);
+  box-shadow: 0 0 0 1px rgba(255,110,110,0.5) inset;
+}
+
+/* 가로 ≥800px — 좌측 컬럼: cmd-bar (위) + 캔버스 (아래). 우측 컬럼: 터미널 풀 높이 (헤더 바로 아래까지).
+   <800px 는 위쪽 #side-terminal-section { display:none } 기본값 + 1col grid 유지. */
+@media (min-width: 800px) {
+  body.page-main main {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "bar    side"
+      "canvas side";
+  }
+  body.page-main #side-terminal-section {
+    display: block;
+    grid-area: side;
+  }
+}
+
+@media (max-width: 640px) {
+  header {
+    position: static;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  input,
+  select {
+    min-height: 36px;
+    padding: 0 10px;
+  }
+
+  button {
+    min-height: 36px;
+  }
+
+  .menu-row {
+    flex-wrap: wrap;
+  }
+
+  .menu-row #new-claude {
+    flex: 1 1 100%;
+  }
+
+  #status {
+    align-self: center;
+  }
+
+  h1 {
+    font-size: 18px;
+  }
+
+  #main-view-section {
+    height: 60vh;
+    min-height: 360px;
+  }
+
+  #log-list {
+    max-height: none;
+  }
+
+  #log-list li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .modal-body {
+    padding: 14px;
+    gap: 10px;
+    border-radius: 8px;
+  }
+
+  #approval-input {
+    max-height: 180px;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  #approval-reason {
+    min-height: 56px;
+  }
+
+  .modal-actions {
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  .modal-actions button {
+    min-width: 76px;
+    padding: 0 10px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 380px) {
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* ===== provider bolts (claude/codex 활성도) ===== */
+.motion-bolts {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+.provider-bolt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  opacity: 0.55;
+  transition: color 0.2s, opacity 0.2s, filter 0.2s;
+}
+.provider-bolt svg { display: block; }
+.provider-bolt[data-active="1"][data-provider="claude"] {
+  color: var(--green);
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(126,231,135,0.55));
+}
+.provider-bolt[data-active="1"][data-provider="codex"] {
+  color: var(--cyan);
+  opacity: 1;
+  filter: drop-shadow(0 0 4px rgba(0,212,255,0.55));
+}
+.provider-bolt[data-active="1"][data-stage="sprinting"] {
+  animation: bolt-sprint 0.55s ease-in-out infinite alternate;
+}
+@keyframes bolt-sprint {
+  from { filter: drop-shadow(0 0 2px currentColor); }
+  to   { filter: drop-shadow(0 0 8px currentColor); }
+}
+
+/* ===== Claude 한도 ===== */
+.quota-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.quota-indicator:hover { background: rgba(255,255,255,0.08); }
+.quota-indicator[data-level="ok"]    { border-color: rgba(126,231,135,0.4); }
+.quota-indicator[data-level="warn"]  { border-color: rgba(255,182,39,0.5); }
+.quota-indicator[data-level="crit"]  { border-color: rgba(255,110,110,0.6); }
+.quota-indicator > .quota-indicator-claude { color: var(--green); }
+.quota-indicator > .quota-indicator-codex  { color: var(--cyan); }
+.quota-indicator > .quota-indicator-sep    { color: var(--muted); margin: 0 1px; opacity: 0.6; }
+.quota-indicator > [hidden] { display: none; }
+.quota-indicator[data-stale="1"]::after { content: "·stale"; margin-left: 4px; opacity: 0.7; }
+
+.quota-panel {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: rgba(15,20,36,0.7);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.quota-panel[hidden] { display: none; }
+.quota-panel.quota-stale { border-color: rgba(255,182,39,0.4); }
+.quota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+.quota-title { font-weight: 600; letter-spacing: 0.02em; }
+.quota-refresh {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.quota-refresh:hover { background: rgba(255,255,255,0.08); color: var(--cyan); }
+.quota-refresh.spinning { animation: quota-spin 0.7s linear infinite; }
+@keyframes quota-spin { to { transform: rotate(360deg); } }
+.quota-section {
+  display: grid;
+  gap: 4px;
+}
+.quota-section[hidden] { display: none; }
+.quota-section + .quota-section { margin-top: 2px; }
+.quota-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.quota-list { display: grid; gap: 4px; }
+.quota-row { display: grid; gap: 2px; font-size: 11px; }
+.quota-row-label { color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.quota-row-label .quota-reset { opacity: 0.7; }
+.quota-row-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.quota-row-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: var(--green);
+  transition: width 0.3s, background 0.2s;
+}
+.quota-row[data-level="warn"] .quota-row-bar-fill { background: var(--amber); }
+.quota-row[data-level="crit"] .quota-row-bar-fill { background: var(--red); }
+.quota-row-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: rgba(255,255,255,0.85);
+  font-variant-numeric: tabular-nums;
+  mix-blend-mode: difference;
+}
+.quota-meta {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+  text-align: right;
+}

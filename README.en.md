@@ -4,30 +4,32 @@ English · [한국어](README.md)
 
 The smallest possible dashboard for watching a Claude Code session in your browser.
 
-![Dashboard — electric arcs flow to session nodes, terminal on the right](docs/demo.png)
-![Approval modal — allow or deny risky commands from the web](docs/approval.png)
+![Dashboard — electric arcs from the user anchor to session nodes, say bubbles, terminal](docs/demo.png)
 
-- Every time the AI uses a tool, an electric arc flows from "you" (left) to that session's node (right) — you see what is happening as a picture, not a wall of text.
-- Send a "comment" from the top cmd bar and it is injected into the front of that session's next turn.
-- Approve sensitive tools (Bash, Edit, Write) from a web modal. If you do not answer, it falls back to the normal terminal prompt.
-- Run several sessions at once: each gets a stable colour, and you filter by session with the picker.
-- A side terminal (and a separate full-screen page) attaches to a tmux session, so you can type into it straight from the browser.
+- Every time the AI uses a tool, an electric arc flows from the user anchor (top) to that session's node — gold (command in), green (result out). You see what is happening as a picture, not a wall of text.
+- Each node carries a say bubble (the last line of the response) and glows by working / awaiting state.
+- Send a "comment" from the top cmd bar and it is injected into the front of that node's next turn.
+- Approve sensitive tools (Bash, Edit, Write) from an in-canvas box on the node. If you do not answer, it falls back to the normal terminal prompt.
+- Click a node and the side terminal (and a separate full-screen page) attaches to that tmux session, so you can type into it straight from the browser.
 
 Single user, local only. Event and session state lives in memory and is gone when the process stops. No database, no cloud, no external auth.
 
-> This repo is the publishable core of a larger private tool ("Zapper"). Codex nodes, usage quotas, file uploads, and more are intentionally left out. The goal is to show the core (hooks -> bridge -> visualization + two-way + terminal) as small as it can be.
+> This repo is the publishable part of a larger private tool ("Zapper"). The front-end (the `main-view.js` art engine + `styles.css` + layout) is taken straight from the real Zapper to match its design; codex nodes, usage quotas, file uploads, and any private paths/tokens are stripped out.
 
 ## Layout
 
 ```
 zapper-open/
 ├── server/
-│   ├── index.js        Node bridge (Express + ws). Events, sessions, comment queue, approvals. In-memory.
+│   ├── index.js        Node bridge (Express + ws). Events, sessions, comment queue, approvals, say. In-memory.
 │   └── pty.js          /pty/ws — attaches an xterm to a tmux session via node-pty
 ├── web/                p5.js dashboard + xterm terminal
-│   ├── index.html · app.js · styles.css    main dashboard (arcs, nodes, cmd bar, side terminal)
-│   ├── term.js                              shared xterm <-> /pty/ws helper
-│   └── terminal.html                        full-screen terminal (separate tab)
+│   ├── main-view.js    p5 art engine (nodes, electric arcs, glow, say bubbles, in-canvas approval). Ported from Zapper.
+│   ├── main.js         controller — WS -> main-view, picker, cmd bar, approval, click-node -> terminal
+│   ├── styles.css      Zapper's styles (header, cmd bar, grid layout)
+│   ├── index.html      main dashboard
+│   ├── term.js         shared xterm <-> /pty/ws helper
+│   └── terminal.html   full-screen terminal (separate tab)
 ├── hooks/              pre-tool-use-health-gate.sh — denies gated tools when the bridge is down
 ├── settings-snippet.json   hooks to merge into ~/.claude/settings.json
 └── scripts/install.sh  merges the hooks into settings.json (with backup + path substitution)
