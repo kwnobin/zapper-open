@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Zapper Terminal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #090c12; }
+    #term { position: fixed; inset: 0; padding: 8px; }
+  </style>
+</head>
+<body>
+  <div id="term"></div>
+  <script src="term.js"></script>
+  <script>
+    const session = new URLSearchParams(location.search).get('session') || 'main';
+    document.title = `Zapper Terminal · ${session}`;
+    window.mountZapperTerminal(document.getElementById('term'), session);
+  </script>
+</body>
+</html>

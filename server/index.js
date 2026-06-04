@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
+import { attachPty } from './pty.js';
 
 const HOST = process.env.ZAPPER_HOST || '127.0.0.1';
 const PORT = Number(process.env.ZAPPER_PORT || 8089);
@@ -102,6 +103,8 @@ function respondApproval(approval_id, decision, reason) {
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
+const ptyWss = new WebSocketServer({ noServer: true });
+attachPty(ptyWss);
 
 function broadcast(message) {
   const payload = JSON.stringify(message);
@@ -214,9 +217,14 @@ app.post('/sessions/:id/label', (req, res) => {
 // ---- websocket -------------------------------------------------------------
 function handleUpgrade(req, socket, head) {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  if (url.pathname !== '/ws') return socket.destroy();
   if (TOKEN && url.searchParams.get('token') !== TOKEN) return socket.destroy();
-  wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+  if (url.pathname === '/ws') {
+    return wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+  }
+  if (url.pathname === '/pty/ws') {
+    return ptyWss.handleUpgrade(req, socket, head, (ws) => ptyWss.emit('connection', ws, req));
+  }
+  socket.destroy();
 }
 server.on('upgrade', handleUpgrade);
 

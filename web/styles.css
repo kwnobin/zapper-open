@@ -2,27 +2,45 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: #0b0e14; color: #d7dce5;
   font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-body { display: flex; flex-direction: column; }
+body { display: flex; flex-direction: column; overflow: hidden; }
 
-header, footer { display: flex; gap: 8px; align-items: center; padding: 8px 12px;
+header, .cmdbar { display: flex; gap: 8px; align-items: center; padding: 8px 12px;
   background: #11151f; border-bottom: 1px solid #1c2230; }
-footer { border-top: 1px solid #1c2230; border-bottom: none; }
-.brand { font-weight: 700; letter-spacing: 0.3px; }
-.dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; }
+.cmdbar { background: #0e1320; }
+.brand { font-weight: 700; letter-spacing: 0.3px; white-space: nowrap; }
+.spacer { flex: 1 1 auto; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #6b7280; flex: 0 0 auto; }
 .dot.up { background: #34d399; } .dot.down { background: #f87171; }
+.muted { color: #7b86a0; }
 
 select, input, button { background: #0e131c; color: #d7dce5; border: 1px solid #2a3242;
   border-radius: 6px; padding: 6px 8px; font: inherit; }
-input { flex: 1 1 auto; min-width: 0; }
-button { cursor: pointer; }
+header input { flex: 0 0 auto; width: 160px; }
+.cmdbar input { flex: 1 1 auto; min-width: 0; }
+#tmuxname { width: 110px; }
+button { cursor: pointer; white-space: nowrap; }
 button:disabled, input:disabled { opacity: 0.45; cursor: default; }
-#label, #saveLabel { flex: 0 0 auto; }
 
-main { flex: 1 1 auto; position: relative; min-height: 0; }
-canvas { display: block; }
+main { flex: 1 1 auto; display: flex; min-height: 0; }
+#sketch { flex: 1 1 auto; position: relative; min-width: 0; }
+#sketch canvas { display: block; }
+
+#termpane { flex: 0 0 440px; display: flex; flex-direction: column;
+  border-left: 1px solid #1c2230; background: #090c12; min-width: 0; }
+.termhead { display: flex; gap: 8px; align-items: center; padding: 6px 10px;
+  background: #11151f; border-bottom: 1px solid #1c2230; font-size: 12px; }
+.termhead button { padding: 3px 8px; }
+.termhead #termtarget { flex: 1 1 auto; }
+#term { flex: 1 1 auto; min-height: 0; padding: 6px 8px; }
+
+/* narrow screens: hide the side terminal, use the full-screen /terminal.html instead */
+@media (max-width: 900px) {
+  #termpane { display: none; }
+  header input#tmuxname { width: 90px; }
+}
 
 .modal { position: fixed; inset: 0; display: grid; place-items: center;
-  background: rgba(4, 6, 11, 0.6); }
+  background: rgba(4, 6, 11, 0.6); z-index: 10; }
 .modal.hidden { display: none; }
 .card { background: #141a26; border: 1px solid #2a3242; border-radius: 12px;
   padding: 18px; width: min(520px, 92vw); }

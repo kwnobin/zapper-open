@@ -4,24 +4,30 @@ English · [한국어](README.md)
 
 The smallest possible dashboard for watching a Claude Code session in your browser.
 
-![Dashboard — tool events flow as particles](docs/demo.png)
+![Dashboard — electric arcs flow to session nodes, terminal on the right](docs/demo.png)
 ![Approval modal — allow or deny risky commands from the web](docs/approval.png)
 
-- Every time the AI uses a tool, a particle flows across the screen — you see what is happening as a picture, not a wall of text.
-- Send a "comment" from the page and it is injected into the front of that session's next turn.
+- Every time the AI uses a tool, an electric arc flows from "you" (left) to that session's node (right) — you see what is happening as a picture, not a wall of text.
+- Send a "comment" from the top cmd bar and it is injected into the front of that session's next turn.
 - Approve sensitive tools (Bash, Edit, Write) from a web modal. If you do not answer, it falls back to the normal terminal prompt.
 - Run several sessions at once: each gets a stable colour, and you filter by session with the picker.
+- A side terminal (and a separate full-screen page) attaches to a tmux session, so you can type into it straight from the browser.
 
-Single user, local only. All state lives in memory and is gone when the process stops. No database, no cloud, no external auth.
+Single user, local only. Event and session state lives in memory and is gone when the process stops. No database, no cloud, no external auth.
 
-> This repo is the publishable core of a larger private tool ("Zapper"). Codex nodes, usage quotas, file uploads, an embedded terminal, and more are intentionally left out. The goal is to show the three core layers (hooks -> bridge -> visualization) as small as they can be.
+> This repo is the publishable core of a larger private tool ("Zapper"). Codex nodes, usage quotas, file uploads, and more are intentionally left out. The goal is to show the core (hooks -> bridge -> visualization + two-way + terminal) as small as it can be.
 
 ## Layout
 
 ```
 zapper-open/
-├── server/index.js     Node bridge (Express + ws). Events, sessions, comment queue, approvals. In-memory.
-├── web/                p5.js single-page dashboard (index.html · app.js · styles.css)
+├── server/
+│   ├── index.js        Node bridge (Express + ws). Events, sessions, comment queue, approvals. In-memory.
+│   └── pty.js          /pty/ws — attaches an xterm to a tmux session via node-pty
+├── web/                p5.js dashboard + xterm terminal
+│   ├── index.html · app.js · styles.css    main dashboard (arcs, nodes, cmd bar, side terminal)
+│   ├── term.js                              shared xterm <-> /pty/ws helper
+│   └── terminal.html                        full-screen terminal (separate tab)
 ├── hooks/              pre-tool-use-health-gate.sh — denies gated tools when the bridge is down
 ├── settings-snippet.json   hooks to merge into ~/.claude/settings.json
 └── scripts/install.sh  merges the hooks into settings.json (with backup + path substitution)
@@ -31,10 +37,10 @@ How it works: Claude Code calls hooks at moments like before/after a tool runs, 
 
 ## Quick start
 
-Requires: Node 18+, `jq`, `curl`.
+Requires: Node 18+, `tmux`, `jq`, `curl`. (`tmux` is for the terminal. On macOS, node-pty may need Xcode CLT — `xcode-select --install`.)
 
 ```bash
-# 1. install deps (just express + ws)
+# 1. install deps (express, ws, node-pty)
 npm install
 
 # 2. start the bridge
@@ -58,6 +64,18 @@ Now give Claude Code any task and particles flow across the dashboard.
 - **Label**: select a session, type a label, save. It shows a human name instead of a UUID.
 - **Send a comment**: select a session, type into the bottom box, send. It is prepended to that session's next prompt. (It does not attach to a turn already in progress — send it before the next prompt.)
 - **Approve**: Bash / Edit / Write / NotebookEdit calls pop a modal. allow / deny. If you do not answer within 120s, the modal closes and Claude Code falls back to its own terminal prompt — so it is safe to leave the browser unattended.
+
+## Terminal
+
+The side terminal (shown on wide screens, ≥900px) and the full-screen `/terminal.html` opened by the `Terminal ↗` button both attach to a tmux session. The `main` input in the header is the tmux session name.
+
+```bash
+# run Claude Code inside tmux
+tmux new -s main
+claude     # runs inside tmux session 'main'
+```
+
+Now the side terminal's `attach` (or the full-screen page) joins the same session — your keyboard and the browser share one shell. If the session does not exist, `tmux new-session -A` creates it. The terminal is keystrokes only; use the cmd bar to inject comments.
 
 ## External / mobile access (Tailscale)
 
@@ -86,6 +104,7 @@ When `ZAPPER_HOST` is not localhost the bridge also binds 127.0.0.1, so the hook
 | `ZAPPER_PORT` | port | `8089` |
 | `ZAPPER_TOKEN` | shared token (optional) | unset |
 | `ZAPPER_APPROVAL_TIMEOUT_MS` | how long to wait for a web approval | `120000` |
+| `ZAPPER_TMUX_DEFAULT` | default tmux session name for the terminal | `main` |
 
 ## Build it yourself
 

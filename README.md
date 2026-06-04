@@ -4,24 +4,30 @@
 
 클로드 코드(Claude Code) 세션을 브라우저에서 들여다보는 가장 작은 대시보드.
 
-![대시보드 — 도구 이벤트가 입자로 흐른다](docs/demo.png)
+![대시보드 — 세션 노드로 전기 아크가 흐르고, 오른쪽에 터미널](docs/demo.png)
 ![승인 모달 — 위험한 명령을 웹에서 허용/거부](docs/approval.png)
 
-- AI가 도구를 쓸 때마다 화면에 입자(particle)가 흐른다 — 무슨 일이 일어나는지 글이 아니라 그림으로 본다.
-- 보던 화면에서 바로 "의견"을 보내면 그 세션의 다음 차례에 끼워 넣어진다.
+- AI가 도구를 쓸 때마다 you(왼쪽)에서 세션 노드(오른쪽)로 전기 아크가 흐른다 — 무슨 일이 일어나는지 글이 아니라 그림으로 본다.
+- 상단 cmd 바에서 "의견"을 보내면 그 세션의 다음 차례에 끼워 넣어진다.
 - 민감한 도구(Bash·Edit·Write) 실행 승인을 웹 모달에서 누른다. 안 누르면 원래의 터미널 프롬프트로 돌아간다.
 - 여러 세션을 동시에 띄워도 세션별 색으로 구분되고, picker로 골라 본다.
+- 오른쪽 사이드 터미널(별도 풀스크린 페이지도)이 tmux 세션에 붙어, 웹에서 직접 타이핑한다.
 
-단일 사용자, 로컬 전용. 모든 상태는 메모리에만 있고 프로세스를 끄면 사라진다. DB도, 클라우드도, 외부 인증도 없다.
+단일 사용자, 로컬 전용. 이벤트·세션 상태는 메모리에만 있고 프로세스를 끄면 사라진다. DB도, 클라우드도, 외부 인증도 없다.
 
-> 이 레포는 더 큰 사설 도구("Zapper")의 공개 가능한 핵심만 추려낸 레퍼런스다. codex 노드, 사용량 한도, 파일 업로드, 내장 터미널 같은 기능은 의도적으로 빠져 있다. 핵심 3층(훅 → 브리지 → 시각화)을 가장 작게 보여주는 것이 목적이다.
+> 이 레포는 더 큰 사설 도구("Zapper")의 공개 가능한 핵심만 추려낸 레퍼런스다. codex 노드, 사용량 한도, 파일 업로드 같은 기능은 의도적으로 빠져 있다. 핵심(훅 → 브리지 → 시각화 + 양방향 + 터미널)을 작게 보여주는 것이 목적이다.
 
 ## 구조
 
 ```
 zapper-open/
-├── server/index.js     Node 브리지 (Express + ws). 이벤트 수신·세션·의견큐·승인. 인메모리.
-├── web/                p5.js 단일 페이지 대시보드 (index.html · app.js · styles.css)
+├── server/
+│   ├── index.js        Node 브리지 (Express + ws). 이벤트 수신·세션·의견큐·승인. 인메모리.
+│   └── pty.js          /pty/ws — node-pty 로 tmux 세션에 attach (xterm 백엔드)
+├── web/                p5.js 대시보드 + xterm 터미널
+│   ├── index.html · app.js · styles.css    메인 대시보드 (아크·노드·cmd바·사이드 터미널)
+│   ├── term.js                              xterm ↔ /pty/ws 공용 헬퍼
+│   └── terminal.html                        풀스크린 터미널 (별도 탭)
 ├── hooks/              pre-tool-use-health-gate.sh — 브리지 다운 시 게이팅 도구 deny
 ├── settings-snippet.json   ~/.claude/settings.json 에 머지할 훅 설정
 └── scripts/install.sh  훅을 settings.json 에 자동 머지 (백업 + 경로 치환)
@@ -31,10 +37,10 @@ zapper-open/
 
 ## 빠른 시작
 
-필요: Node 18+, `jq`, `curl`.
+필요: Node 18+, `tmux`, `jq`, `curl`. (터미널을 쓰려면 `tmux`. macOS는 node-pty 빌드에 Xcode CLT가 필요할 수 있다 — `xcode-select --install`.)
 
 ```bash
-# 1. 의존성 설치 (express, ws 만)
+# 1. 의존성 설치 (express, ws, node-pty)
 npm install
 
 # 2. 브리지 가동
@@ -58,6 +64,18 @@ bash scripts/install.sh
 - **라벨**: 세션을 고른 뒤 라벨 입력 → save. UUID 대신 사람이 알아볼 이름으로 보인다.
 - **의견 보내기**: 세션을 고른 뒤 아래 입력창에 텍스트 → send. 그 세션의 다음 프롬프트 앞에 자동으로 붙는다. (이미 진행 중인 차례에는 안 붙는다 — 다음 프롬프트 전에 보내야 한다.)
 - **승인**: Bash·Edit·Write·NotebookEdit 호출 시 모달이 뜬다. allow/deny. 120초 안 누르면 모달이 닫히고 클로드 코드 기본 터미널 프롬프트로 폴백한다. 그래서 브라우저를 안 보고 있어도 안전하다.
+
+## 터미널
+
+오른쪽 사이드 터미널(넓은 화면 ≥900px에서 표시)과 `Terminal ↗` 버튼이 여는 풀스크린 `/terminal.html`은 둘 다 tmux 세션에 붙는다. 헤더의 `main` 입력칸이 tmux 세션 이름이다.
+
+```bash
+# 클로드 코드를 tmux 안에서 띄운다
+tmux new -s main
+claude     # tmux 세션 'main' 안에서 실행
+```
+
+이제 사이드 터미널의 `attach`(또는 풀스크린 페이지)가 같은 세션에 붙어, 본인 키보드와 웹이 같은 셸을 공유한다. 세션이 없으면 `tmux new-session -A`가 새로 만든다. 입력은 키 입력 전용 — 의견 주입은 cmd 바를 쓴다.
 
 ## 외부·모바일 접속 (Tailscale)
 
@@ -86,6 +104,7 @@ ZAPPER_TOKEN=$(openssl rand -hex 32) ZAPPER_HOST=$(tailscale ip -4) npm start
 | `ZAPPER_PORT` | 포트 | `8089` |
 | `ZAPPER_TOKEN` | 공유 토큰 (선택) | unset |
 | `ZAPPER_APPROVAL_TIMEOUT_MS` | 승인 대기 시간 | `120000` |
+| `ZAPPER_TMUX_DEFAULT` | 터미널 기본 tmux 세션 이름 | `main` |
 
 ## 직접 만들어보기
 
