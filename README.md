@@ -1,6 +1,11 @@
 # Zapper Open
 
+[English](README.en.md) · 한국어
+
 클로드 코드(Claude Code) 세션을 브라우저에서 들여다보는 가장 작은 대시보드.
+
+![대시보드 — 도구 이벤트가 입자로 흐른다](docs/demo.png)
+![승인 모달 — 위험한 명령을 웹에서 허용/거부](docs/approval.png)
 
 - AI가 도구를 쓸 때마다 화면에 입자(particle)가 흐른다 — 무슨 일이 일어나는지 글이 아니라 그림으로 본다.
 - 보던 화면에서 바로 "의견"을 보내면 그 세션의 다음 차례에 끼워 넣어진다.
@@ -53,6 +58,19 @@ bash scripts/install.sh
 - **라벨**: 세션을 고른 뒤 라벨 입력 → save. UUID 대신 사람이 알아볼 이름으로 보인다.
 - **의견 보내기**: 세션을 고른 뒤 아래 입력창에 텍스트 → send. 그 세션의 다음 프롬프트 앞에 자동으로 붙는다. (이미 진행 중인 차례에는 안 붙는다 — 다음 프롬프트 전에 보내야 한다.)
 - **승인**: Bash·Edit·Write·NotebookEdit 호출 시 모달이 뜬다. allow/deny. 120초 안 누르면 모달이 닫히고 클로드 코드 기본 터미널 프롬프트로 폴백한다. 그래서 브라우저를 안 보고 있어도 안전하다.
+
+## 외부·모바일 접속 (Tailscale)
+
+폰이나 다른 PC에서 보고 싶으면 [Tailscale](https://tailscale.com)(개인 사설망)을 깔고 브리지를 Tailscale IP로 띄운다:
+
+```bash
+ZAPPER_TOKEN=$(openssl rand -hex 32) ZAPPER_HOST=$(tailscale ip -4) npm start
+```
+
+`ZAPPER_HOST`가 localhost가 아니면 브리지는 127.0.0.1도 함께 바인딩한다 — 훅의 기본 대상(127.0.0.1:8089)이 살아있어야 이벤트가 들어오기 때문. 폰의 Tailscale 브라우저로 `http://<Tailscale IP>:8089/?token=<값>` 으로 접속한다.
+
+- Tailscale 사설망 안에서만 도달. 인터넷에 그대로 노출되지 않는다.
+- 외부로 열 때는 `ZAPPER_TOKEN`을 꼭 켜라. 훅 payload에 명령어·파일 경로가 담긴다.
 
 ## 보안
 

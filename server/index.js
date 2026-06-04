@@ -212,12 +212,13 @@ app.post('/sessions/:id/label', (req, res) => {
 });
 
 // ---- websocket -------------------------------------------------------------
-server.on('upgrade', (req, socket, head) => {
+function handleUpgrade(req, socket, head) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   if (url.pathname !== '/ws') return socket.destroy();
   if (TOKEN && url.searchParams.get('token') !== TOKEN) return socket.destroy();
   wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
-});
+}
+server.on('upgrade', handleUpgrade);
 
 wss.on('connection', (ws) => {
   ws.send(JSON.stringify({
@@ -229,3 +230,12 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(PORT, HOST, () => console.log(`[zapper] listening on http://${HOST}:${PORT}`));
+
+// When bound to an external address (e.g. a Tailscale IP for phone access), also bind
+// loopback so the hooks' default 127.0.0.1 target keeps working. Set ZAPPER_TOKEN when
+// exposing beyond localhost.
+if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
+  const loopback = http.createServer(app);
+  loopback.on('upgrade', handleUpgrade);
+  loopback.listen(PORT, '127.0.0.1', () => console.log(`[zapper] also on http://127.0.0.1:${PORT}`));
+}
